@@ -13,10 +13,12 @@ export const sanitizeHTML = (html) => {
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'br', 'a', 'img', 'span', 'div'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'class'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'class','rel'],
     ADD_ATTR: ['target'],
     FORCE_TARGET: '_blank',
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+      RELATIVE_URLS: true,
+  FORBID_TAGS: ['script', 'iframe', 'object', 'embed'],
+   ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i
   });
 };
 
@@ -87,7 +89,7 @@ export const sanitizeText = (text) => {
 
   return String(text)
     .replace(/<[^>]*>/g, '')
-    .replace(/[<>\"'&]/g, char => ({
+  .replace(/[<>"'&]/g, char => ({
       '<': '&lt;', '>': '&gt;', '"': '&quot;', 
       "'": '&#x27;', '&': '&amp;'
     })[char]);

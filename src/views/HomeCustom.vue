@@ -158,8 +158,8 @@
 
           <div class="col-sm-5 col-sm-pull-7">
             <iframe 
-              v-if="institucionData.institucion_link_video_vision" 
-              :src="institucionData.institucion_link_video_vision" 
+              v-if="safeVideoUrl(institucionData.institucion_link_video_vision)"
+              :src="safeIframeUrl(institucionData.institucion_link_video_vision)"
               frameborder="0" 
               style="width: 100%; min-height: 400px"
               allowfullscreen="allowfullscreen"
@@ -959,42 +959,136 @@ export default {
   },
 
   methods: {
-    buildSafeUrl(path) {
-      if (!path) return '#';
-      const cleaned = String(path).trim();
-      if (cleaned.startsWith('http')) return cleaned;
-      const base = this.imageUrl?.replace(/\/$/, '');
-      return `${base}${cleaned.startsWith('/') ? cleaned : `/${cleaned}`}`;
-    },
-    
-    buildSafeImageUrl(path) {
-      if (!path) return '';
-      const cleaned = String(path).trim();
-      
-      if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
-        return cleaned.replace('http://', 'https://');
+buildSafeUrl(path) {
+  if (!path) return '#';
+
+  const cleaned = String(path).trim();
+
+  if (cleaned.startsWith('http')) {
+
+    try {
+
+      const parsed = new URL(cleaned);
+
+      const allowedDomains = [
+        'upea.bo',
+        'upea.edu.bo'
+      ];
+
+      const hostname =
+        parsed.hostname.replace(/^www\./,'');
+
+      if (
+        parsed.protocol === 'https:' &&
+        allowedDomains.some(domain =>
+          hostname === domain ||
+          hostname.endsWith(`.${domain}`)
+        )
+      ) {
+        return cleaned;
       }
-      
-      const resource = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
-      const base = this.imageUrl?.replace(/\/+$/, '');
-      const finalUrl = `${base}${resource}`.replace(/\/+/g, '/');
-      
-      if (process.env.VUE_APP_ENV === 'production') {
-        return finalUrl.replace('http://', 'https://');
-      }
-      
-      return finalUrl;
-    },
+
+      return '#';
+
+    } catch {
+      return '#';
+    }
+  }
+
+  const base = this.imageUrl?.replace(/\/$/, '');
+
+  return `${base}${cleaned.startsWith('/') ? cleaned : `/${cleaned}`}`;
+},
     
-    buildWhatsAppUrl(celular) {
-      if (!celular) return '#';
-      const cleaned = String(celular).replace(/[^0-9]/g, '');
-      return `https://wa.me/+591${cleaned}`;
-    },
+buildSafeImageUrl(path) {
+  if (!path) return '';
+
+  try {
+    const cleaned = String(path).trim();
+
+    if (
+      cleaned.startsWith('http://') ||
+      cleaned.startsWith('https://')
+    ) {
+      const url = new URL(cleaned);
+
+      const allowedDomains = [
+        'upea.bo',
+        'api.upea.bo'
+      ];
+
+      if (
+        !allowedDomains.some(domain =>
+          url.hostname.endsWith(domain)
+        )
+      ) {
+        return '';
+      }
+
+      return url.href.replace('http://', 'https://');
+    }
+
+    const base = this.imageUrl?.replace(/\/$/, '');
+
+    return `${base}${cleaned.startsWith('/') ? cleaned : '/' + cleaned}`;
+  } catch {
+    return '';
+  }
+},
+
+safeVideoUrl(url) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+
+    const allowed = [
+      'youtube.com',
+      'www.youtube.com',
+      'youtu.be'
+    ];
+
+    if (
+      parsed.protocol === 'https:' &&
+      allowed.includes(parsed.hostname)
+    ) {
+      return url;
+    }
+
+    return null;
+
+  } catch {
+    return null;
+  }
+},
+    getSafeInstitucionId() {
+  const id = Number(this.idInstitucion);
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return 9;
+  }
+
+  return id;
+},
+buildWhatsAppUrl(celular) {
+  if (!celular) return '#';
+
+  const cleaned = String(celular)
+    .replace(/\D/g, '');
+
+  if (!/^\d{8}$/.test(cleaned)) {
+    return '#';
+  }
+
+  return `https://wa.me/591${cleaned}`;
+},
 
     async getPortadas() {
       try {
-        const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
+       const institucionId = this.getSafeInstitucionId(); //const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
         const res = await api.get(`/institucion/${institucionId}/contenido`);
         const data = res.data;
         this.portadasLocal = data.portada?.map(this._limpiar) || [];
@@ -1014,7 +1108,7 @@ export default {
 
     async getContenidosGacetaEventos() {
       try {
-        const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
+        const institucionId = this.getSafeInstitucionId(); //const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
         const res = await api.get(`/institucion/${institucionId}/gacetaEventos`);
         const data = res.data;
         this.convocatoriasLocal = data.convocatorias?.map(this._limpiar) || [];
@@ -1036,7 +1130,7 @@ export default {
 
     async getRecursos() {
       try {
-        const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
+        const institucionId = this.getSafeInstitucionId(); //const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
         const res = await api.get(`/institucion/${institucionId}/recursos`);
         const data = res.data;
         this.publicacionesLocal = data.upea_publicaciones?.map(this._limpiar) || [];
@@ -1054,7 +1148,7 @@ export default {
 
     async getContenidoExtra() {
       try {
-        const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
+        const institucionId = this.getSafeInstitucionId(); //const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
         const res = await api.get(`/institucion/${institucionId}/contenido`);
         const data = res.data;
         this.portadasLocal = data.portada?.map(this._limpiar) || [];
@@ -1070,7 +1164,7 @@ export default {
 
     async getInstitucion() {
       try {
-        const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
+        const institucionId = this.getSafeInstitucionId(); //const institucionId = this.idInstitucion || process.env.VUE_APP_ID_INSTITUCION || '9';
         const res = await api.get(`/institucionesPrincipal/${institucionId}`);
         const institucionData = res.data.Descripcion || res.data;
         this.$store.commit('setInstitucion', institucionData);
@@ -1101,6 +1195,28 @@ export default {
       });
       return cleaned;
     },
+
+safeIframeUrl(url) {
+  if (!url) return '';
+
+  try {
+    const parsed = new URL(url);
+
+    const allowedHosts = [
+      'youtube.com',
+      'www.youtube.com',
+      'youtu.be'
+    ];
+
+    if (!allowedHosts.includes(parsed.hostname)) {
+      return '';
+    }
+
+    return parsed.href;
+  } catch {
+    return '';
+  }
+},
 
     formatearFecha(fechaISO) {
       if (!fechaISO) return '';

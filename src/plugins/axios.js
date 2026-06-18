@@ -4,8 +4,22 @@ const clean = (value) => value?.trim() || ''
 
 const API_BASE = clean(process.env.VUE_APP_API_BASE_URL)
 const API_TOKEN = clean(process.env.VUE_APP_API_TOKEN)
-// ✅ ELIMINADO: UPLOADS_URL ya no es necesario (imágenes vienen con URL completa)
 const ENV = clean(process.env.VUE_APP_ENV) || 'development'
+function validateApiBase(url) {
+  try {
+    const parsed = new URL(url);
+
+    return [
+      'https:'
+    ].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+if (!validateApiBase(API_BASE)) {
+  throw new Error('API_BASE inválida');
+}
 
 if (!API_BASE) {
   if (ENV !== 'production') {
@@ -14,24 +28,37 @@ if (!API_BASE) {
   throw new Error('VUE_APP_API_BASE_URL es requerida')
 }
 
-// ✅ ELIMINADO: Validación de UPLOADS_URL (ya no se usa)
-// if (!UPLOADS_URL) { ... }
-
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 15000,
+  validateStatus(status) {
+      return status >= 200 && status < 300;
+  },
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
+      'Content-Type':'application/json',
+      'Accept':'application/json'
   }
 })
 
-api.interceptors.request.use(config => {  
+api.interceptors.request.use(config => {
   if (API_TOKEN) {
-    config.headers.Authorization = `Bearer ${API_TOKEN}`
+    const requestUrl = new URL(
+      config.url,
+      config.baseURL
+    );
+
+    const apiUrl = new URL(API_BASE);
+
+    if (
+      requestUrl.origin === apiUrl.origin
+    ) {
+      config.headers.Authorization =
+        `Bearer ${API_TOKEN}`;
+    }
   }
-  return config
-})
+
+  return config;
+});
 
 api.interceptors.response.use(
   response => response,
@@ -52,12 +79,15 @@ api.interceptors.response.use(
       }
     }
     
-    return Promise.reject(error)
+   return Promise.reject({
+  status: error.response?.status,
+  message:
+    error.response?.data?.message ||
+    'Error inesperado'
+});
   }
 )
 
-// ✅ ELIMINADO: api.uploadsUrl ya no es necesario
-// api.uploadsUrl = UPLOADS_URL
 
 api.clean = clean 
 
