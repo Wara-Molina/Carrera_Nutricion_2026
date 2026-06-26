@@ -93,7 +93,9 @@
       </div>
     </div>
 
-    <section class="about">
+
+    <section   class="about"
+  :class="{ 'about-institucion-33': isSpecialInstitution }">
       <div class="container">
         <ul class="row our-links">
           <li class="col-sm-4 apply-online clearfix equal-hight">
@@ -563,6 +565,22 @@
   position: relative; 
   overflow: hidden; 
 }
+.about-institucion-33 {
+  --main-color: #941a96;
+  --main-color-2: rgb(78, 95, 112);
+  --main-color-3: rgb(107, 51, 118);
+
+  background: #f5f5f5; /* opcional */
+}
+
+/* opcional: ajustes visuales extra solo para 33 */
+.about-institucion-33 .sm-head {
+  color: var(--main-color);
+}
+
+.about-institucion-33 .more {
+  background: var(--main-color-3);
+}
 .banner-carousel { 
   width: 100%; 
   height: 100vh !important; 
@@ -872,7 +890,9 @@ export default {
       "convocatorias", "cursos", "eventos", "servicios", "ofertas",
       "gacetas", "publicaciones", "videos", "autoridades"
     ]),
-    
+    isSpecialInstitution() {
+  return Number(this.getSafeInstitucionId()) === 33;
+},
     institucionData() {
       const vuexData = this.Institucion?.Descripcion || this.Institucion;
       if (vuexData && Object.keys(vuexData).length > 0) return vuexData;
