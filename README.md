@@ -1,11 +1,11 @@
-# MEDICINA 2026
+# ENFERMERIA 2026
 
 Proyecto web desarrollado con Vue.js para la gestión y difusión de información institucional, eventos, cursos y publicaciones del área de salud.
 
 ## Carreras asociadas
 
 Este sistema está orientado a la carrera de:
-- Medicina
+- Enfermeria
 
 ## Descripción
 
